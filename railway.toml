@@ -2,8 +2,8 @@
 builder = "NIXPACKS"
 
 [phases.setup]
-# This explicitly forces Railway to load both Node.js and FFmpeg binaries
-nixPkgs = ["nodePackages.npm", "nodejs", "ffmpeg"]
+# This is the exact package syntax Nixpacks uses to bundle Node.js and FFmpeg
+nixPkgs = ["...", "nodejs-20_x", "ffmpeg"]
 
 [deploy]
 root = "server"
