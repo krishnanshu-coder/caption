@@ -23,12 +23,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
 // 2. Dynamically resolve the absolute path to your uploads folder
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
-}
-
-// Ensure dynamic 'uploads/' folder structure exists inside the server folder
+// 2. Dynamically resolve the absolute path to your uploads folder
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
