@@ -1,2 +1,7 @@
+[providers]
+# Force Nixpacks to inject the native Node.js engine base pack
+providers = ["node"]
+
 [phases.setup]
+# Bundle the FFmpeg package seamlessly alongside Node
 nixPkgs = ["...", "ffmpeg"]
