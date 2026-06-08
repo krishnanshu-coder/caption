@@ -121,30 +121,37 @@ app.post('/api/generate-captions', uploadLimiter, upload.single('video'), async 
     const srtContent = wordsToSRT(words, styleOptions);
     fs.writeFileSync(srtPath, srtContent);
 
-    console.log(`Hardburning subtitles via FFmpeg...`);
+   // ==========================================
+// UPDATE THE FFMEG BLOCK TO LOOK LIKE THIS:
+// ==========================================
+console.log(`Hardburning subtitles via FFmpeg...`);
+
+ffmpeg(videoPath)
+  // Wrapping the path in quotes avoids character errors in Linux environments
+  .outputOptions(`-vf subtitles='${srtPath}'`) 
+  .save(outputVideoPath)
+  .on('end', () => {
+    console.log('FFmpeg processing complete!');
     
-    ffmpeg(videoPath)
-      .outputOptions(`-vf subtitles=${srtPath}`)
-      .save(outputVideoPath)
-      .on('end', () => {
-        console.log('FFmpeg processing complete!');
+    if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
+    if (fs.existsSync(srtPath)) fs.unlinkSync(srtPath);
 
-        if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
-        if (fs.existsSync(srtPath)) fs.unlinkSync(srtPath);
-
-        res.json({
-          success: true,
-          text,
-          srt: srtContent,
-          videoUrl: `/uploads/${outputVideoName}`,
-          wordCount: words?.length || 0,
-          language
-        });
-      })
-      .on('error', (err) => {
-        console.error('FFmpeg Error:', err.message);
-        throw err;
-      });
+    res.json({
+      success: true,
+      text,
+      srt: srtContent,
+      videoUrl: `/uploads/${outputVideoName}`,
+      wordCount: words?.length || 0,
+      language
+    });
+  })
+  .on('error', (err) => {
+    console.error('FFmpeg Error:', err.message);
+    // Explicitly send the error message to the frontend instead of hanging the request
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, error: `FFmpeg processing failed: ${err.message}` });
+    }
+  });
 
   } catch (error) {
     if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
