@@ -1,0 +1,10 @@
+[build]
+builder = "NIXPACKS"
+
+[phases.setup]
+nixPkgs = ["...", "ffmpeg"]
+
+[deploy]
+# Tells Railway to run the application from inside the server folder
+watchPatterns = ["server/**"]
+startCommand = "cd server && npm start"
