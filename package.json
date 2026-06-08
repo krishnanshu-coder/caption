@@ -1,0 +1,9 @@
+{
+  "name": "video-caption-app-root",
+  "version": "1.0.0",
+  "scripts": {
+    "install-server": "cd server && npm install",
+    "build": "npm run install-server",
+    "start": "cd server && node index.js"
+  }
+}
