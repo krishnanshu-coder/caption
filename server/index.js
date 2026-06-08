@@ -12,11 +12,21 @@ const cron = require('node-cron');               // Added for auto-cleanup
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+
+
+
+// Serving the static frontend assets from '../public' directory relative to /server
 app.use(cors());
 app.use(express.json());
 
-// Serving the static frontend assets from '../public' directory relative to /server
+// 1. Correct Static Serving using an absolute path
 app.use(express.static(path.join(__dirname, '../public')));
+
+// 2. Dynamically resolve the absolute path to your uploads folder
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
 
 // Ensure dynamic 'uploads/' folder structure exists inside the server folder
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -26,10 +36,13 @@ if (!fs.existsSync(uploadsDir)) {
 
 // File upload configuration using the dynamic path
 const upload = multer({
-  dest: 'server/uploads/', // Local path backup fallback
   storage: multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadsDir),
-    filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
+    destination: (req, file, cb) => {
+      cb(null, uploadsDir);
+    },
+    filename: (req, file, cb) => {
+      cb(null, Date.now() + path.extname(file.originalname));
+    }
   }),
   limits: { fileSize: 200 * 1024 * 1024 } // 200MB limit
 });
