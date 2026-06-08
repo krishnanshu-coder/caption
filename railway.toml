@@ -2,9 +2,10 @@
 builder = "NIXPACKS"
 
 [phases.setup]
-nixPkgs = ["...", "ffmpeg"]
+# This explicitly forces Railway to load both Node.js and FFmpeg binaries
+nixPkgs = ["nodePackages.npm", "nodejs", "ffmpeg"]
 
 [deploy]
-# Tells Railway to run the application from inside the server folder
+root = "server"
 watchPatterns = ["server/**"]
-startCommand = "cd server && npm start"
+startCommand = "node index.js"
