@@ -385,4 +385,115 @@ async function startJob() {
   fd.append('fontSize', fsInput ? fsInput.value : 22);
 
   try {
-    const res  = await fetch('/api/generate-captions', { method:
+    const res  = await fetch('/api/generate-captions', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Upload failed');
+
+    // Start polling
+    $('pfill').style.width = '20%';
+    $('statusMsg').textContent = 'Transcribing... (this takes 30–120 seconds)';
+    $('genBtn').innerHTML = '<i class="ti ti-loader-2"></i> Processing...';
+    pollJob(data.jobId);
+
+  } catch (err) {
+    resetBtn();
+    showError(err.message);
+  }
+}
+
+// ── Poll until done ────────────────────────────────────────────────────────────
+let pollCount = 0;
+const progressSteps = [20,30,40,50,60,70,80,85,90,95];
+
+function pollJob(jobId) {
+  pollCount = 0;
+  if (pollTimer) clearInterval(pollTimer);
+
+  pollTimer = setInterval(async () => {
+    try {
+      const res  = await fetch('/api/status/' + jobId);
+      const data = await res.json();
+
+      // Animate progress bar for transcription
+      if(data.status !== 'rendering') {
+        const pct = progressSteps[Math.min(pollCount, progressSteps.length - 1)];
+        $('pfill').style.width = pct + '%';
+        pollCount++;
+      }
+
+      if (data.status === 'done') {
+        clearInterval(pollTimer);
+        onSuccess(data.result);
+      } else if (data.status === 'rendering') {
+        // NEW: Update UI specifically for the FFmpeg rendering phase
+        $('statusMsg').textContent = 'Burning captions into MP4... (This can take 30-60s for long videos)';
+        $('pfill').style.width = '85%';
+      } else if (data.status === 'error') {
+        clearInterval(pollTimer);
+        resetBtn();
+        showError(data.error || 'Transcription failed.');
+      }
+      // else still 'processing' → keep polling
+    } catch (err) {
+      // network hiccup — keep trying
+      console.warn('Poll error:', err.message);
+    }
+  }, 3000);   // poll every 3 seconds
+}
+
+// ── Success ────────────────────────────────────────────────────────────────────
+function onSuccess(result) {
+  resultData = result;
+  $('pfill').style.width = '100%';
+  $('statusMsg').textContent = '';
+  $('wCount').textContent = result.wordCount + ' words';
+  $('transcript').textContent = result.text || '(no text detected)';
+  $('outSection').style.display = 'block';
+  $('s2').className = 'sdot done'; $('s2').textContent = '✓';
+  $('s3').className = 'sdot done'; $('s3').textContent = '✓';
+  $('genBtn').disabled = false;
+  $('genBtn').innerHTML = '<i class="ti ti-refresh"></i> Re-generate';
+  
+  // NEW: Display the MP4 download button if the video URL exists
+  const mp4Btn = $('dlMp4Btn');
+  if (result.videoUrl) {
+    mp4Btn.style.display = 'flex';
+    mp4Btn.onclick = () => window.location.href = result.videoUrl;
+  } else {
+    mp4Btn.style.display = 'none';
+  }
+}
+
+function resetBtn() {
+  $('genBtn').disabled = false;
+  $('genBtn').innerHTML = '<i class="ti ti-sparkles"></i> Generate Captions';
+  $('pfill').style.width = '0%';
+  $('statusMsg').textContent = '';
+  $('s2').className = 'sdot'; $('s2').textContent = '2';
+}
+
+// ── Downloads ──────────────────────────────────────────────────────────────────
+function dlFile(type) {
+  if (!resultData) return;
+  const content = type === 'srt' ? resultData.srt : resultData.vtt;
+  const blob = new Blob([content], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'captions.' + type;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function copyText(btn) {
+  if (!resultData) return;
+  navigator.clipboard.writeText(resultData.text).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="ti ti-check"></i> Copied!';
+    setTimeout(() => btn.innerHTML = orig, 2000);
+  });
+}
+
+updatePreview();
+</script>
+</body>
+</html>
