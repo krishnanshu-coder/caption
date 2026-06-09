@@ -1,8 +1,13 @@
 FROM node:20-slim
 
+# Install FFmpeg to process and export the MP4 video
+RUN apt-get update && \
+    apt-get install -y ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
-# Copy and install dependencies first (better caching)
+# Copy and install dependencies
 COPY server/package.json ./server/
 RUN cd server && npm install --omit=dev
 
@@ -15,4 +20,5 @@ RUN mkdir -p server/uploads
 
 EXPOSE 3000
 
-CMD ["node", "server/index.js"]
+WORKDIR /app/server
+CMD ["node", "index.js"]
