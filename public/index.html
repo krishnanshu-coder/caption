@@ -7,103 +7,130 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
   <style>
     :root {
-      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      --color-background-primary: #ffffff;
-      --color-background-secondary: #f9fafb;
-      --color-text-primary: #111827;
-      --color-text-secondary: #4b5563;
-      --color-border-secondary: #d1d5db;
-      --color-border-tertiary: #e5e7eb;
-      --border-radius-lg: 12px;
-      --border-radius-md: 8px;
+      --purple: #534AB7; --purple-light: #EEEDFE; --purple-dark: #3C3489;
+      --green-light: #E1F5EE; --green-dark: #085041; --green-mid: #0F6E56;
+      --blue-light: #E6F1FB; --blue-dark: #0C447C;
+      --bg: #f3f4f6; --card: #ffffff; --surface: #f9fafb;
+      --text: #111827; --muted: #4b5563;
+      --border: #e5e7eb; --border2: #d1d5db;
+      --radius: 12px; --radius-sm: 8px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: var(--font-sans); background-color: #f3f4f6; color: var(--color-text-primary); }
-    .app { max-width: 680px; margin: 0 auto; padding: 1rem; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+    .app { max-width: 680px; margin: 0 auto; padding: 1rem 1rem 3rem; }
+
+    /* Header */
     .header { text-align: center; padding: 1.5rem 0 1rem; }
     .logo { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-    .logo-icon { width: 40px; height: 40px; background: #7F77DD; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
-    .logo-text { font-size: 22px; font-weight: 500; }
-    .subtitle { font-size: 14px; color: var(--color-text-secondary); }
-    .badge-row { display: flex; justify-content: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .logo-icon { width: 40px; height: 40px; background: var(--purple); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+    .logo-text { font-size: 22px; font-weight: 600; }
+    .subtitle { font-size: 14px; color: var(--muted); }
+    .badges { display: flex; justify-content: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
     .badge { font-size: 12px; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
-    .badge-hi { background: #EEEDFE; color: #3C3489; }
-    .badge-en { background: #E6F1FB; color: #0C447C; }
-    .badge-hl { background: #E1F5EE; color: #085041; }
-    .card { background: var(--color-background-primary); border: 1px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .upload-zone { border: 1.5px dashed var(--color-border-secondary); border-radius: var(--border-radius-lg); padding: 2rem 1rem; text-align: center; cursor: pointer; transition: background 0.15s; }
-    .upload-zone:hover { background: var(--color-background-secondary); }
-    .upload-icon { font-size: 36px; color: #7F77DD; margin-bottom: 8px; }
+    .badge-hi { background: var(--purple-light); color: var(--purple-dark); }
+    .badge-en { background: var(--blue-light);   color: var(--blue-dark); }
+    .badge-hl { background: var(--green-light);  color: var(--green-dark); }
+
+    /* Card */
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+    .section-label { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.6px; }
+
+    /* Upload */
+    .upload-zone { border: 1.5px dashed var(--border2); border-radius: var(--radius); padding: 2rem 1rem; text-align: center; cursor: pointer; transition: background 0.15s; }
+    .upload-zone:hover, .upload-zone.drag { background: var(--surface); border-color: var(--purple); }
+    .upload-icon { font-size: 36px; color: var(--purple); margin-bottom: 8px; }
     .upload-title { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
-    .upload-hint { font-size: 13px; color: var(--color-text-secondary); }
-    .file-pill { display: inline-flex; align-items: center; gap: 8px; background: #EEEDFE; color: #3C3489; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; margin-top: 10px; }
-    .section-label { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .upload-hint { font-size: 13px; color: var(--muted); }
+    .file-pill { display: none; justify-content: center; margin-top: 10px; }
+    .file-pill span { display: inline-flex; align-items: center; gap: 6px; background: var(--purple-light); color: var(--purple-dark); padding: 5px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; }
+
+    /* Lang buttons */
     .lang-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-    .lang-btn { border: 1px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 10px 8px; text-align: center; cursor: pointer; transition: all 0.15s; background: var(--color-background-primary); }
-    .lang-btn.active { border: 2px solid #7F77DD; background: #EEEDFE; }
+    .lang-btn { border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 10px 8px; text-align: center; cursor: pointer; transition: all 0.15s; background: var(--card); }
+    .lang-btn.active { border: 2px solid var(--purple); background: var(--purple-light); }
     .lang-btn .flag { font-size: 20px; display: block; margin-bottom: 4px; }
     .lang-btn .name { font-size: 13px; font-weight: 500; }
-    .lang-btn .tag { font-size: 11px; color: var(--color-text-secondary); }
+    .lang-btn .tag  { font-size: 11px; color: var(--muted); }
+
+    /* Style */
     .style-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .style-option { border: 1px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 10px 12px; cursor: pointer; transition: all 0.15s; background: var(--color-background-primary); }
-    .style-option.active { border: 2px solid #7F77DD; background: #EEEDFE; }
-    .style-name { font-size: 13px; font-weight: 500; }
-    .style-demo { margin-top: 6px; padding: 4px 6px; font-size: 12px; font-weight: 500; display: inline-block; border-radius: 3px; }
-    .color-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
-    .color-swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.1s; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1); }
-    .color-swatch:hover { transform: scale(1.15); }
-    .color-swatch.active { border-color: var(--color-text-primary); }
-    .font-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
-    .font-pill { padding: 5px 12px; border-radius: 20px; border: 1px solid var(--color-border-secondary); cursor: pointer; font-size: 13px; background: var(--color-background-primary); color: var(--color-text-primary); transition: all 0.15s; }
-    .font-pill.active { background: #7F77DD; color: white; border-color: #7F77DD; }
-    .anim-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 6px; }
-    .anim-chip { padding: 7px 6px; border-radius: var(--border-radius-md); border: 1px solid var(--color-border-secondary); cursor: pointer; font-size: 12px; text-align: center; background: var(--color-background-primary); color: var(--color-text-secondary); transition: all 0.15s; }
-    .anim-chip.active { background: #E1F5EE; color: #085041; border-color: #0F6E56; font-weight: 500; }
-    .slider-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
-    .slider-row label { font-size: 13px; color: var(--color-text-secondary); min-width: 70px; }
-    .slider-row input[type=range] { flex: 1; cursor: pointer; }
-    .slider-val { font-size: 13px; font-weight: 500; min-width: 32px; text-align: right; }
-    .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
-    .feature-chip { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: var(--border-radius-md); border: 1px solid var(--color-border-tertiary); cursor: pointer; font-size: 13px; color: var(--color-text-secondary); transition: all 0.15s; background: var(--color-background-primary); }
-    .feature-chip.on { background: #E1F5EE; color: #085041; border-color: #0F6E56; font-weight: 500; }
-    .feature-chip i { font-size: 16px; }
-    .preview-box { background: #111; border-radius: var(--border-radius-md); aspect-ratio: 16/6; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 16px; position: relative; overflow: hidden; }
-    .preview-bg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0.15; }
-    .caption-preview { font-size: 18px; font-weight: 500; padding: 6px 16px; border-radius: 6px; z-index: 1; text-align: center; max-width: 90%; transition: all 0.3s; }
-    .generate-btn { width: 100%; padding: 14px; border-radius: var(--border-radius-lg); background: #534AB7; color: white; font-size: 15px; font-weight: 500; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.15s; font-family: var(--font-sans); }
-    .generate-btn:hover:not(:disabled) { background: #3C3489; }
-    .generate-btn:disabled { background: var(--color-background-secondary); color: var(--color-text-secondary); cursor: not-allowed; border: 1px solid var(--color-border-tertiary); }
-    .progress-bar { height: 6px; background: var(--color-background-secondary); border-radius: 4px; overflow: hidden; margin: 12px 0; border: 1px solid var(--color-border-tertiary); }
-    .progress-fill { height: 100%; background: linear-gradient(90deg, #7F77DD, #5DCAA5); border-radius: 4px; transition: width 0.4s; }
-    .status-text { font-size: 13px; color: var(--color-text-secondary); text-align: center; min-height: 20px; }
-    .error-box { background: #FEF2F2; border: 1px solid #FECACA; border-radius: var(--border-radius-md); padding: 12px 14px; font-size: 13px; color: #991B1B; margin-top: 10px; display: none; }
-    .output-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 1rem; margin-top: 10px; border: 1px solid var(--color-border-tertiary); }
-    .output-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-    .output-label { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); }
-    .transcript-box { font-size: 13px; color: var(--color-text-secondary); line-height: 1.6; max-height: 120px; overflow-y: auto; padding: 8px; background: var(--color-background-primary); border-radius: 6px; border: 1px solid var(--color-border-tertiary); white-space: pre-wrap; word-break: break-word; }
+    .style-opt { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; cursor: pointer; transition: all 0.15s; background: var(--card); }
+    .style-opt.active { border: 2px solid var(--purple); background: var(--purple-light); }
+    .style-name { font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+    .style-demo { display: inline-block; font-size: 12px; font-weight: 500; padding: 3px 6px; border-radius: 3px; }
+
+    /* Color swatches */
+    .color-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .swatch { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.1s; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1); }
+    .swatch:hover { transform: scale(1.15); }
+    .swatch.active { border-color: #111; }
+
+    /* Font pills */
+    .font-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .fpill { padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border2); cursor: pointer; font-size: 13px; background: var(--card); transition: all 0.15s; }
+    .fpill.active { background: var(--purple); color: white; border-color: var(--purple); }
+
+    /* Anim chips */
+    .anim-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-top: 8px; }
+    .achip { padding: 7px; border-radius: var(--radius-sm); border: 1px solid var(--border2); cursor: pointer; font-size: 12px; text-align: center; background: var(--card); color: var(--muted); transition: all 0.15s; }
+    .achip.active { background: var(--green-light); color: var(--green-dark); border-color: var(--green-mid); font-weight: 500; }
+
+    /* Sliders */
+    .slider-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+    .slider-row label { font-size: 13px; color: var(--muted); min-width: 72px; }
+    .slider-row input[type=range] { flex: 1; cursor: pointer; accent-color: var(--purple); }
+    .slider-val { font-size: 13px; font-weight: 500; min-width: 34px; text-align: right; }
+
+    /* Preview */
+    .preview-box { background: #111; border-radius: var(--radius-sm); aspect-ratio: 16/6; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 16px; position: relative; overflow: hidden; }
+    .preview-bg-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0.12; pointer-events: none; }
+    .cap-prev { font-size: 18px; font-weight: 500; padding: 6px 16px; border-radius: 6px; z-index: 1; text-align: center; max-width: 90%; transition: all 0.3s; }
+
+    /* Generate */
+    .gen-btn { width: 100%; padding: 14px; border-radius: var(--radius); background: var(--purple); color: white; font-size: 15px; font-weight: 600; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.15s; font-family: inherit; }
+    .gen-btn:hover:not(:disabled) { background: var(--purple-dark); }
+    .gen-btn:disabled { background: var(--surface); color: var(--muted); cursor: not-allowed; border: 1px solid var(--border); }
+
+    /* Progress */
+    .pbar { height: 6px; background: var(--surface); border-radius: 4px; overflow: hidden; margin: 12px 0 4px; display: none; border: 1px solid var(--border); }
+    .pfill { height: 100%; background: linear-gradient(90deg, #7F77DD, #5DCAA5); border-radius: 4px; transition: width 0.5s; width: 0%; }
+    .status-msg { font-size: 13px; color: var(--muted); text-align: center; min-height: 18px; margin-bottom: 4px; }
+
+    /* Error */
+    .err-box { display: none; background: #FEF2F2; border: 1px solid #FECACA; border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13px; color: #991B1B; margin-top: 10px; }
+
+    /* Steps */
+    .step-row { display: flex; align-items: center; gap: 6px; justify-content: center; font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+    .sdot { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; background: var(--surface); border: 1px solid var(--border); flex-shrink: 0; }
+    .sdot.done   { background: var(--green-light); color: var(--green-dark); border-color: var(--green-mid); }
+    .sdot.active { background: var(--purple-light); color: var(--purple-dark); border-color: var(--purple); }
+
+    /* Output */
+    .out-card { background: var(--surface); border-radius: var(--radius-sm); padding: 1rem; margin-top: 12px; border: 1px solid var(--border); }
+    .out-row  { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .out-label { font-size: 13px; font-weight: 500; color: var(--muted); }
+    .transcript { font-size: 13px; color: var(--muted); line-height: 1.6; max-height: 120px; overflow-y: auto; padding: 8px; background: var(--card); border-radius: 6px; border: 1px solid var(--border); white-space: pre-wrap; word-break: break-word; }
     .dl-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-    .dl-btn { flex: 1; min-width: 120px; padding: 9px; border-radius: var(--border-radius-md); border: 1px solid var(--color-border-secondary); background: var(--color-background-primary); font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.15s; color: var(--color-text-primary); font-family: var(--font-sans); }
-    .dl-btn:hover { background: var(--color-background-secondary); }
-    .dl-btn.primary { background: #534AB7; color: white; border-color: #534AB7; }
-    .dl-btn.primary:hover { background: #3C3489; }
-    .step-row { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--color-text-secondary); width: 100%; justify-content: center; margin-bottom: 12px; }
-    .step-dot { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; background: var(--color-background-secondary); color: var(--color-text-secondary); flex-shrink: 0; border: 1px solid var(--color-border-tertiary); }
-    .step-dot.done { background: #E1F5EE; color: #085041; border-color: #0F6E56; }
-    .step-dot.active { background: #EEEDFE; color: #3C3489; border-color: #7F77DD; }
-    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+    .dl-btn { flex: 1; min-width: 110px; padding: 9px; border-radius: var(--radius-sm); border: 1px solid var(--border2); background: var(--card); font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.15s; font-family: inherit; color: var(--text); }
+    .dl-btn:hover { background: var(--surface); }
+    .dl-btn.primary { background: var(--purple); color: white; border-color: var(--purple); }
+    .dl-btn.primary:hover { background: var(--purple-dark); }
+
+    .sr-only { position: absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
   </style>
 </head>
 <body>
-<h2 class="sr-only">CaptionAI — Video Caption Generator for Hindi, English, Hinglish</h2>
+<h2 class="sr-only">CaptionAI — Video caption generator for Hindi, English, Hinglish</h2>
 <div class="app">
 
+  <!-- Header -->
   <div class="header">
     <div class="logo">
       <div class="logo-icon"><i class="ti ti-subtitles" style="color:white;font-size:22px"></i></div>
       <span class="logo-text">CaptionAI</span>
     </div>
-    <p class="subtitle">Auto-generate captions from your video</p>
-    <div class="badge-row">
+    <p class="subtitle">Upload your video · get captions in seconds</p>
+    <div class="badges">
       <span class="badge badge-hi">🇮🇳 Hindi</span>
       <span class="badge badge-en">🇬🇧 English</span>
       <span class="badge badge-hl">🔀 Hinglish</span>
@@ -116,9 +143,9 @@
     <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
       <div class="upload-icon"><i class="ti ti-video-plus"></i></div>
       <p class="upload-title">Click to upload or drag & drop</p>
-      <p class="upload-hint">MP4, MOV, AVI, MKV · max 200MB</p>
-      <div id="filePill" style="display:none;justify-content:center;margin-top:10px">
-        <span class="file-pill"><i class="ti ti-file-check" style="font-size:16px"></i> <span id="fileName">video.mp4</span></span>
+      <p class="upload-hint">MP4, MOV, AVI, MKV, MP3, WAV · max 200 MB</p>
+      <div class="file-pill" id="filePill">
+        <span><i class="ti ti-file-check"></i> <span id="fileName">file</span></span>
       </div>
     </div>
     <input type="file" id="fileInput" style="display:none" accept="video/*,audio/*">
@@ -129,16 +156,13 @@
     <p class="section-label">Language</p>
     <div class="lang-grid">
       <div class="lang-btn" onclick="setLang(this,'hindi')">
-        <span class="flag">🇮🇳</span>
-        <div class="name">Hindi</div><div class="tag">हिंदी</div>
+        <span class="flag">🇮🇳</span><div class="name">Hindi</div><div class="tag">हिंदी</div>
       </div>
       <div class="lang-btn active" onclick="setLang(this,'english')">
-        <span class="flag">🇬🇧</span>
-        <div class="name">English</div><div class="tag">English</div>
+        <span class="flag">🇬🇧</span><div class="name">English</div><div class="tag">English</div>
       </div>
       <div class="lang-btn" onclick="setLang(this,'hinglish')">
-        <span class="flag">🔀</span>
-        <div class="name">Hinglish</div><div class="tag">Hindi + Eng</div>
+        <span class="flag">🔀</span><div class="name">Hinglish</div><div class="tag">Hindi + Eng</div>
       </div>
     </div>
   </div>
@@ -147,75 +171,78 @@
   <div class="card">
     <p class="section-label">Caption Style</p>
     <div class="style-grid">
-      <div class="style-option active" onclick="setStyle(this,'classic')">
+      <div class="style-opt active" onclick="setStyle(this,'classic')">
         <div class="style-name">Classic</div>
-        <div class="style-demo" style="color:white;background:#000">Hello World</div>
+        <span class="style-demo" style="color:white;background:#000">Hello World</span>
       </div>
-      <div class="style-option" onclick="setStyle(this,'glow')">
+      <div class="style-opt" onclick="setStyle(this,'glow')">
         <div class="style-name">Neon Glow</div>
-        <div class="style-demo" style="color:#0ff;background:#000">Hello World</div>
+        <span class="style-demo" style="color:#0ff;background:#000">Hello World</span>
       </div>
-      <div class="style-option" onclick="setStyle(this,'bold')">
+      <div class="style-opt" onclick="setStyle(this,'bold')">
         <div class="style-name">Bold Impact</div>
-        <div class="style-demo" style="color:#FFD700;font-weight:700;background:#000">HELLO WORLD</div>
+        <span class="style-demo" style="color:#FFD700;font-weight:700;background:#000">HELLO</span>
       </div>
-      <div class="style-option" onclick="setStyle(this,'minimal')">
+      <div class="style-opt" onclick="setStyle(this,'minimal')">
         <div class="style-name">Minimal</div>
-        <div class="style-demo" style="color:#333;border-bottom:1px solid #333">Hello World</div>
+        <span class="style-demo" style="color:#333;border-bottom:1px solid #333">Hello World</span>
       </div>
     </div>
 
     <div style="margin-top:1rem">
-      <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:6px">Text color</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:4px">Text color</p>
       <div class="color-row">
-        <div class="color-swatch active" style="background:#FFFFFF" onclick="setColor(this,'#FFFFFF')"></div>
-        <div class="color-swatch" style="background:#FFD700" onclick="setColor(this,'#FFD700')"></div>
-        <div class="color-swatch" style="background:#00FFFF" onclick="setColor(this,'#00FFFF')"></div>
-        <div class="color-swatch" style="background:#FF6B6B" onclick="setColor(this,'#FF6B6B')"></div>
-        <div class="color-swatch" style="background:#98FF98" onclick="setColor(this,'#98FF98')"></div>
-        <div class="color-swatch" style="background:#FF9EFF" onclick="setColor(this,'#FF9EFF')"></div>
-        <div class="color-swatch" style="background:#FFA500" onclick="setColor(this,'#FFA500')"></div>
+        <div class="swatch active" style="background:#FFF"    onclick="setColor(this,'#FFFFFF')"></div>
+        <div class="swatch"        style="background:#FFD700" onclick="setColor(this,'#FFD700')"></div>
+        <div class="swatch"        style="background:#00FFFF" onclick="setColor(this,'#00FFFF')"></div>
+        <div class="swatch"        style="background:#FF6B6B" onclick="setColor(this,'#FF6B6B')"></div>
+        <div class="swatch"        style="background:#98FF98" onclick="setColor(this,'#98FF98')"></div>
+        <div class="swatch"        style="background:#FF9EFF" onclick="setColor(this,'#FF9EFF')"></div>
+        <div class="swatch"        style="background:#FFA500" onclick="setColor(this,'#FFA500')"></div>
       </div>
     </div>
 
     <div style="margin-top:1rem">
-      <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:6px">Font style</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:4px">Font</p>
       <div class="font-row">
-        <span class="font-pill active" onclick="setFont(this,'Arial')" style="font-family:Arial">Arial</span>
-        <span class="font-pill" onclick="setFont(this,'Georgia')" style="font-family:Georgia">Georgia</span>
-        <span class="font-pill" onclick="setFont(this,'Courier New')" style="font-family:'Courier New'">Mono</span>
-        <span class="font-pill" onclick="setFont(this,'Impact')" style="font-family:Impact">Impact</span>
-        <span class="font-pill" onclick="setFont(this,'Trebuchet MS')" style="font-family:'Trebuchet MS'">Trebuchet</span>
+        <span class="fpill active" onclick="setFont(this,'Arial')"         style="font-family:Arial">Arial</span>
+        <span class="fpill"        onclick="setFont(this,'Georgia')"        style="font-family:Georgia">Georgia</span>
+        <span class="fpill"        onclick="setFont(this,'Courier New')"    style="font-family:'Courier New'">Mono</span>
+        <span class="fpill"        onclick="setFont(this,'Impact')"         style="font-family:Impact">Impact</span>
+        <span class="fpill"        onclick="setFont(this,'Trebuchet MS')"   style="font-family:'Trebuchet MS'">Trebuchet</span>
       </div>
     </div>
 
     <div style="margin-top:1rem">
-      <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:4px">Animation</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:4px">Animation</p>
       <div class="anim-grid">
-        <div class="anim-chip active" onclick="setAnim(this,'none')">None</div>
-        <div class="anim-chip" onclick="setAnim(this,'fadein')">Fade In</div>
-        <div class="anim-chip" onclick="setAnim(this,'slide')">Slide Up</div>
-        <div class="anim-chip" onclick="setAnim(this,'typewriter')">Typewriter</div>
-        <div class="anim-chip" onclick="setAnim(this,'bounce')">Bounce</div>
-        <div class="anim-chip" onclick="setAnim(this,'zoom')">Zoom</div>
+        <div class="achip active" onclick="setAnim(this,'none')">None</div>
+        <div class="achip" onclick="setAnim(this,'fadein')">Fade In</div>
+        <div class="achip" onclick="setAnim(this,'slide')">Slide Up</div>
+        <div class="achip" onclick="setAnim(this,'typewriter')">Typewriter</div>
+        <div class="achip" onclick="setAnim(this,'bounce')">Bounce</div>
+        <div class="achip" onclick="setAnim(this,'zoom')">Zoom</div>
       </div>
     </div>
 
-    <div style="margin-top:1rem">
+    <div>
       <div class="slider-row">
         <label>Font size</label>
-        <input type="range" id="fontSizeSlider" min="12" max="48" value="22" step="1" oninput="document.getElementById('fsVal').textContent=this.value+'px';updatePreview()">
-        <span class="slider-val" id="fsVal">22px</span>
+        <input type="range" min="12" max="48" value="22" step="1"
+          oninput="document.getElementById('fsV').textContent=this.value+'px';updatePreview()">
+        <span class="slider-val" id="fsV">22px</span>
       </div>
       <div class="slider-row">
         <label>Words/line</label>
-        <input type="range" id="wordsPerLineSlider" min="2" max="12" value="6" step="1" oninput="document.getElementById('wlVal').textContent=this.value">
-        <span class="slider-val" id="wlVal">6</span>
+        <input type="range" id="wplSlider" min="2" max="12" value="6" step="1"
+          oninput="document.getElementById('wlV').textContent=this.value">
+        <span class="slider-val" id="wlV">6</span>
       </div>
       <div class="slider-row">
         <label>BG opacity</label>
-        <input type="range" id="bgOpacitySlider" min="0" max="100" value="70" step="5" oninput="document.getElementById('bgVal').textContent=this.value+'%';updatePreview()">
-        <span class="slider-val" id="bgVal">70%</span>
+        <input type="range" min="0" max="100" value="70" step="5"
+          oninput="document.getElementById('bgV').textContent=this.value+'%';updatePreview()">
+        <span class="slider-val" id="bgV">70%</span>
       </div>
     </div>
   </div>
@@ -224,8 +251,8 @@
   <div class="card">
     <p class="section-label">Caption Preview</p>
     <div class="preview-box">
-      <div class="preview-bg"><i class="ti ti-video" style="font-size:60px;color:white"></i></div>
-      <div class="caption-preview" id="captionPreview" style="color:#fff;background:rgba(0,0,0,0.7);font-family:Arial">
+      <div class="preview-bg-icon"><i class="ti ti-video" style="font-size:64px;color:white"></i></div>
+      <div class="cap-prev" id="capPrev" style="color:#fff;background:rgba(0,0,0,0.7);font-family:Arial">
         Aapka video yahan dikhega...
       </div>
     </div>
@@ -234,279 +261,215 @@
   <!-- Generate -->
   <div class="card">
     <div class="step-row">
-      <div class="step-dot done" id="s1">✓</div><span>Upload</span>
-      <i class="ti ti-chevron-right" style="font-size:12px;color:var(--color-text-secondary)"></i>
-      <div class="step-dot" id="s2">2</div><span>Transcribe</span>
-      <i class="ti ti-chevron-right" style="font-size:12px;color:var(--color-text-secondary)"></i>
-      <div class="step-dot" id="s3">3</div><span>Download</span>
+      <div class="sdot done" id="s1">✓</div><span>Upload</span>
+      <i class="ti ti-chevron-right" style="font-size:12px;opacity:0.4"></i>
+      <div class="sdot" id="s2">2</div><span>Transcribe</span>
+      <i class="ti ti-chevron-right" style="font-size:12px;opacity:0.4"></i>
+      <div class="sdot" id="s3">3</div><span>Download</span>
     </div>
 
-    <button class="generate-btn" id="generateBtn" onclick="generateCaptions()">
+    <button class="gen-btn" id="genBtn" onclick="startJob()">
       <i class="ti ti-sparkles"></i> Generate Captions
     </button>
 
-    <div class="progress-bar" style="display:none" id="progressBar">
-      <div class="progress-fill" id="progressFill" style="width:0%"></div>
-    </div>
-    <p class="status-text" id="statusText"></p>
+    <div class="pbar" id="pbar"><div class="pfill" id="pfill"></div></div>
+    <p class="status-msg" id="statusMsg"></p>
+    <div class="err-box" id="errBox"></div>
 
-    <div class="error-box" id="errorBox"></div>
-
-    <div id="outputSection" style="display:none">
-      <div class="output-card">
-        <div class="output-row">
-          <span class="output-label"><i class="ti ti-check" style="color:#1D9E75;margin-right:4px"></i> Captions ready!</span>
-          <span style="font-size:12px;color:var(--color-text-secondary)" id="wordCountLabel"></span>
+    <div id="outSection" style="display:none">
+      <div class="out-card">
+        <div class="out-row">
+          <span class="out-label"><i class="ti ti-check" style="color:#1D9E75;margin-right:4px"></i>Captions ready!</span>
+          <span style="font-size:12px;color:var(--muted)" id="wCount"></span>
         </div>
-        <div class="transcript-box" id="transcriptPreview"></div>
+        <div class="transcript" id="transcript"></div>
         <div class="dl-row">
-          <button class="dl-btn primary" id="srtBtn" onclick="downloadFile('srt')"><i class="ti ti-download"></i> SRT</button>
-          <button class="dl-btn" id="vttBtn" onclick="downloadFile('vtt')"><i class="ti ti-download"></i> VTT</button>
-          <button class="dl-btn" onclick="copyText()"><i class="ti ti-copy"></i> Copy text</button>
+          <button class="dl-btn primary" onclick="dlFile('srt')"><i class="ti ti-download"></i> Download SRT</button>
+          <button class="dl-btn"         onclick="dlFile('vtt')"><i class="ti ti-download"></i> Download VTT</button>
+          <button class="dl-btn"         onclick="copyText(this)"><i class="ti ti-copy"></i> Copy text</button>
         </div>
       </div>
     </div>
   </div>
 
 </div>
-
 <script>
-// ── State ──────────────────────────────────────────────────
-let selectedLang = 'english';
-let selectedStyle = 'classic';
-let selectedColor = '#FFFFFF';
-let selectedFont = 'Arial';
-let selectedAnim = 'none';
-let resultData = null;
+// ── State ──────────────────────────────────────────────────────────────────────
+let lang = 'english', style = 'classic', color = '#FFFFFF', font = 'Arial', anim = 'none';
+let resultData = null, pollTimer = null;
 
-// Auto-detect backend URL (same origin in production, localhost in dev)
-const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? 'http://localhost:3000'
-  : '';  // empty = same origin (Railway serves both frontend and backend)
+// ── UI helpers ─────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
 
-// ── UI helpers ─────────────────────────────────────────────
-function setLang(el, lang) {
-  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+function setLang(el, v)  { qs('.lang-btn', el); lang  = v; updatePreview(); }
+function setStyle(el, v) { qs('.style-opt', el); style = v; updatePreview(); }
+function setColor(el, v) { qs('.swatch', el);    color = v; updatePreview(); }
+function setFont(el, v)  { qs('.fpill', el);     font  = v; updatePreview(); }
+function setAnim(el, v)  { qs('.achip', el);     anim  = v; }
+
+function qs(sel, el) {
+  el.closest('.' + sel.slice(1).split(' ')[0])
+    ?.querySelectorAll(sel)
+    .forEach(b => b.classList.remove('active'));
   el.classList.add('active');
-  selectedLang = lang;
-  updatePreview();
-}
-function setStyle(el, style) {
-  document.querySelectorAll('.style-option').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  selectedStyle = style;
-  updatePreview();
-}
-function setColor(el, color) {
-  document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  selectedColor = color;
-  updatePreview();
-}
-function setFont(el, font) {
-  document.querySelectorAll('.font-pill').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  selectedFont = font;
-  updatePreview();
-}
-function setAnim(el, anim) {
-  document.querySelectorAll('.anim-chip').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  selectedAnim = anim;
 }
 
 function updatePreview() {
-  const p = document.getElementById('captionPreview');
-  const fs = document.getElementById('fontSizeSlider').value;
-  const bg = document.getElementById('bgOpacitySlider').value;
-  p.style.color = selectedColor;
-  p.style.fontFamily = selectedFont;
-  p.style.fontSize = fs + 'px';
-  if (selectedStyle === 'glow') {
-    p.style.background = `rgba(0,0,0,${bg/100})`;
-    p.style.textShadow = `0 0 8px ${selectedColor}`;
-    p.style.fontWeight = '500';
-    p.style.textTransform = 'none';
-    p.style.borderBottom = 'none';
+  const p = $('capPrev');
+  const fs = document.querySelector('#wplSlider')?.closest('.card')
+    ?.querySelectorAll('input[type=range]')[0]?.value || 22;
+  const bg = document.querySelector('#wplSlider')?.closest('.card')
+    ?.querySelectorAll('input[type=range]')[2]?.value || 70;
+  p.style.color = color; p.style.fontFamily = font; p.style.fontSize = fs + 'px';
+  if (style === 'glow') {
+    p.style.cssText += `;background:rgba(0,0,0,${bg/100});text-shadow:0 0 8px ${color};font-weight:500;text-transform:none;border-bottom:none`;
     p.textContent = 'Neon caption yahan hoga...';
-  } else if (selectedStyle === 'minimal') {
-    p.style.background = 'transparent';
-    p.style.textShadow = 'none';
-    p.style.fontWeight = '500';
-    p.style.textTransform = 'none';
-    p.style.borderBottom = `1px solid ${selectedColor}`;
+  } else if (style === 'minimal') {
+    p.style.cssText += `;background:transparent;text-shadow:none;font-weight:500;text-transform:none;border-bottom:1px solid ${color}`;
     p.textContent = 'Minimal style caption...';
-  } else if (selectedStyle === 'bold') {
-    p.style.background = `rgba(0,0,0,${bg/100})`;
-    p.style.textShadow = 'none';
-    p.style.fontWeight = '700';
-    p.style.textTransform = 'uppercase';
-    p.style.borderBottom = 'none';
+  } else if (style === 'bold') {
+    p.style.cssText += `;background:rgba(0,0,0,${bg/100});text-shadow:none;font-weight:700;text-transform:uppercase;border-bottom:none`;
     p.textContent = 'BOLD CAPTION YAHAN!';
   } else {
-    p.style.background = `rgba(0,0,0,${bg/100})`;
-    p.style.textShadow = 'none';
-    p.style.fontWeight = '500';
-    p.style.textTransform = 'none';
-    p.style.borderBottom = 'none';
+    p.style.cssText += `;background:rgba(0,0,0,${bg/100});text-shadow:none;font-weight:500;text-transform:none;border-bottom:none`;
     p.textContent = 'Aapka video yahan dikhega...';
   }
 }
 
-document.getElementById('fileInput').addEventListener('change', function() {
-  if (this.files[0]) {
-    document.getElementById('fileName').textContent = this.files[0].name;
-    document.getElementById('filePill').style.display = 'flex';
-    document.getElementById('s1').className = 'step-dot done';
-    document.getElementById('s1').textContent = '✓';
-  }
-});
+// ── File input ─────────────────────────────────────────────────────────────────
+function setFile(file) {
+  if (!file) return;
+  $('fileName').textContent = file.name;
+  $('filePill').style.display = 'flex';
+  $('s1').className = 'sdot done'; $('s1').textContent = '✓';
+}
 
-// Drag & drop support
-const zone = document.getElementById('uploadZone');
-zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.background = '#f0f0ff'; });
-zone.addEventListener('dragleave', () => { zone.style.background = ''; });
+$('fileInput').addEventListener('change', e => setFile(e.target.files[0]));
+const zone = $('uploadZone');
+zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
 zone.addEventListener('drop', e => {
-  e.preventDefault();
-  zone.style.background = '';
-  const file = e.dataTransfer.files[0];
-  if (file) {
-    document.getElementById('fileInput').files = e.dataTransfer.files;
-    document.getElementById('fileName').textContent = file.name;
-    document.getElementById('filePill').style.display = 'flex';
-    document.getElementById('s1').className = 'step-dot done';
-    document.getElementById('s1').textContent = '✓';
-  }
+  e.preventDefault(); zone.classList.remove('drag');
+  const f = e.dataTransfer.files[0]; if (!f) return;
+  const dt = new DataTransfer(); dt.items.add(f);
+  $('fileInput').files = dt.files; setFile(f);
 });
 
-// ── REAL API CALL ──────────────────────────────────────────
-async function generateCaptions() {
-  const fileInput = document.getElementById('fileInput');
-  const file = fileInput.files[0];
+// ── Error helper ───────────────────────────────────────────────────────────────
+function showError(msg) {
+  const b = $('errBox');
+  b.style.display = 'block';
+  b.textContent = '⚠ ' + msg;
+}
+function clearError() { $('errBox').style.display = 'none'; }
 
-  if (!file) {
-    showError('Please upload a video file first.');
-    return;
-  }
+// ── MAIN: start job ────────────────────────────────────────────────────────────
+async function startJob() {
+  const file = $('fileInput').files[0];
+  if (!file) { showError('Please select a video file first.'); return; }
 
-  const btn = document.getElementById('generateBtn');
-  const bar = document.getElementById('progressBar');
-  const fill = document.getElementById('progressFill');
-  const status = document.getElementById('statusText');
-  const out = document.getElementById('outputSection');
-  const errBox = document.getElementById('errorBox');
+  clearError();
+  $('outSection').style.display = 'none';
+  $('genBtn').disabled = true;
+  $('genBtn').innerHTML = '<i class="ti ti-loader-2"></i> Uploading...';
+  $('pbar').style.display = 'block';
+  $('pfill').style.width = '5%';
+  $('statusMsg').textContent = 'Uploading video...';
+  $('s2').className = 'sdot active'; $('s2').textContent = '2';
 
-  // Reset UI
-  btn.disabled = true;
-  bar.style.display = 'block';
-  out.style.display = 'none';
-  errBox.style.display = 'none';
-  document.getElementById('s2').className = 'step-dot active';
-  document.getElementById('s2').textContent = '2';
-
-  // Animated progress while waiting (real progress is unknown)
-  fill.style.width = '5%';
-  status.textContent = 'Uploading video to server...';
-  const fakeProgress = [
-    [15, 'Uploading to AssemblyAI...'],
-    [35, 'Audio extracted, starting transcription...'],
-    [55, 'Transcribing speech...'],
-    [75, 'Detecting words and timestamps...'],
-    [88, 'Almost done...']
-  ];
-  let fpIndex = 0;
-  const fpTimer = setInterval(() => {
-    if (fpIndex < fakeProgress.length) {
-      fill.style.width = fakeProgress[fpIndex][0] + '%';
-      status.textContent = fakeProgress[fpIndex][1];
-      fpIndex++;
-    }
-  }, 3000);
+  const fd = new FormData();
+  fd.append('video', file);
+  fd.append('language', lang);
+  fd.append('wordsPerLine', $('wplSlider').value);
 
   try {
-    const formData = new FormData();
-    formData.append('video', file);
-    formData.append('language', selectedLang);
-    formData.append('style', JSON.stringify({
-      wordsPerLine: document.getElementById('wordsPerLineSlider').value,
-      color: selectedColor,
-      font: selectedFont,
-      style: selectedStyle,
-      animation: selectedAnim
-    }));
+    const res  = await fetch('/api/generate-captions', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || 'Upload failed');
 
-    const response = await fetch(`${BACKEND_URL}/api/generate-captions`, {
-      method: 'POST',
-      body: formData
-    });
-
-    clearInterval(fpTimer);
-
-    if (!response.ok) {
-      let errMsg = `Server error (${response.status})`;
-      try {
-        const errData = await response.json();
-        errMsg = errData.error || errMsg;
-      } catch(e) {}
-      throw new Error(errMsg);
-    }
-
-    const data = await response.json();
-
-    if (!data.success) throw new Error(data.error || 'Generation failed');
-
-    // Store result for downloads
-    resultData = data;
-
-    // Update UI
-    fill.style.width = '100%';
-    status.textContent = '';
-    btn.disabled = false;
-    btn.innerHTML = '<i class="ti ti-refresh"></i> Re-generate';
-
-    document.getElementById('s2').className = 'step-dot done';
-    document.getElementById('s2').textContent = '✓';
-    document.getElementById('s3').className = 'step-dot done';
-    document.getElementById('s3').textContent = '✓';
-
-    document.getElementById('wordCountLabel').textContent = `${data.wordCount} words`;
-    document.getElementById('transcriptPreview').textContent = data.text || '(No text detected)';
-    out.style.display = 'block';
+    // Start polling
+    $('pfill').style.width = '20%';
+    $('statusMsg').textContent = 'Transcribing... (this takes 30–120 seconds)';
+    $('genBtn').innerHTML = '<i class="ti ti-loader-2"></i> Processing...';
+    pollJob(data.jobId);
 
   } catch (err) {
-    clearInterval(fpTimer);
-    fill.style.width = '0%';
-    status.textContent = '';
-    btn.disabled = false;
-    btn.innerHTML = '<i class="ti ti-sparkles"></i> Try Again';
-    document.getElementById('s2').className = 'step-dot';
-    document.getElementById('s2').textContent = '2';
-    showError('Error: ' + err.message);
+    resetBtn();
+    showError(err.message);
   }
 }
 
-function showError(msg) {
-  const box = document.getElementById('errorBox');
-  box.textContent = '⚠ ' + msg;
-  box.style.display = 'block';
+// ── Poll until done ────────────────────────────────────────────────────────────
+let pollCount = 0;
+const progressSteps = [20,30,40,50,60,70,80,88,93,96];
+
+function pollJob(jobId) {
+  pollCount = 0;
+  if (pollTimer) clearInterval(pollTimer);
+
+  pollTimer = setInterval(async () => {
+    try {
+      const res  = await fetch('/api/status/' + jobId);
+      const data = await res.json();
+
+      // Animate progress bar
+      const pct = progressSteps[Math.min(pollCount, progressSteps.length - 1)];
+      $('pfill').style.width = pct + '%';
+      pollCount++;
+
+      if (data.status === 'done') {
+        clearInterval(pollTimer);
+        onSuccess(data.result);
+      } else if (data.status === 'error') {
+        clearInterval(pollTimer);
+        resetBtn();
+        showError(data.error || 'Transcription failed.');
+      }
+      // else still 'processing' → keep polling
+    } catch (err) {
+      // network hiccup — keep trying
+      console.warn('Poll error:', err.message);
+    }
+  }, 3000);   // poll every 3 seconds
 }
 
-function downloadFile(type) {
+// ── Success ────────────────────────────────────────────────────────────────────
+function onSuccess(result) {
+  resultData = result;
+  $('pfill').style.width = '100%';
+  $('statusMsg').textContent = '';
+  $('wCount').textContent = result.wordCount + ' words';
+  $('transcript').textContent = result.text || '(no text detected)';
+  $('outSection').style.display = 'block';
+  $('s2').className = 'sdot done'; $('s2').textContent = '✓';
+  $('s3').className = 'sdot done'; $('s3').textContent = '✓';
+  $('genBtn').disabled = false;
+  $('genBtn').innerHTML = '<i class="ti ti-refresh"></i> Re-generate';
+}
+
+function resetBtn() {
+  $('genBtn').disabled = false;
+  $('genBtn').innerHTML = '<i class="ti ti-sparkles"></i> Generate Captions';
+  $('pfill').style.width = '0%';
+  $('statusMsg').textContent = '';
+  $('s2').className = 'sdot'; $('s2').textContent = '2';
+}
+
+// ── Downloads ──────────────────────────────────────────────────────────────────
+function dlFile(type) {
   if (!resultData) return;
   const content = type === 'srt' ? resultData.srt : resultData.vtt;
-  const mime = type === 'srt' ? 'text/plain' : 'text/vtt';
-  const blob = new Blob([content], { type: mime });
+  const blob = new Blob([content], { type: 'text/plain' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `captions.${type}`;
+  a.download = 'captions.' + type;
   a.click();
   URL.revokeObjectURL(a.href);
 }
 
-function copyText() {
+function copyText(btn) {
   if (!resultData) return;
   navigator.clipboard.writeText(resultData.text).then(() => {
-    const btn = event.target.closest('button');
     const orig = btn.innerHTML;
     btn.innerHTML = '<i class="ti ti-check"></i> Copied!';
     setTimeout(() => btn.innerHTML = orig, 2000);
