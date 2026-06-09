@@ -1,0 +1,19 @@
+{
+  "name": "video-caption-backend",
+  "version": "1.0.0",
+  "description": "Backend for Video Caption Generator",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.2.0",
+    "form-data": "^4.0.0",
+    "multer": "^1.4.5-lts.1",
+    "node-cron": "^3.0.3"
+  }
+}
