@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node index.js"
   },
-  "dependencies": {
+"dependencies": {
+    "@ffmpeg-installer/ffmpeg": "^1.1.6",
     "assemblyai": "^4.0.0",
     "axios": "^1.6.0",
     "cors": "^2.8.5",
