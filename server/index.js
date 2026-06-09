@@ -128,16 +128,26 @@ app.post('/api/generate-captions', uploadLimiter, upload.single('video'), async 
 
    // ==========================================
 // UPDATE THE FFMEG BLOCK TO LOOK LIKE THIS:
-// ==========================================
+// ================================================================
+// REPLACE YOUR FFmpeg ENCODING BLOCK WITH THIS BULLETPROOF VERSION:
+// ================================================================
 console.log(`Hardburning subtitles via FFmpeg...`);
 
 ffmpeg(videoPath)
-  // Wrapping the path in quotes avoids character errors in Linux environments
-  .outputOptions(`-vf subtitles='${srtPath}'`) 
+  // Add the SRT file as a secondary input stream channel
+  .input(srtPath)
+  // Copy the video and audio streams without re-encoding (lightning fast!)
+  .outputOptions([
+    '-c:v copy',
+    '-c:a copy',
+    '-c:s mov_text', // Encodes captions as native iOS/Web compatible video metadata subtitles
+    '-metadata:s:s:0 language=eng'
+  ])
   .save(outputVideoPath)
   .on('end', () => {
     console.log('FFmpeg processing complete!');
-    
+
+    // Clean up temporary local files safely
     if (fs.existsSync(videoPath)) fs.unlinkSync(videoPath);
     if (fs.existsSync(srtPath)) fs.unlinkSync(srtPath);
 
@@ -150,6 +160,12 @@ ffmpeg(videoPath)
       language
     });
   })
+  .on('error', (err) => {
+    console.error('FFmpeg Pipeline Error:', err.message);
+    if (!res.headersSent) {
+      res.status(500).json({ success: false, error: `FFmpeg processing failed: ${err.message}` });
+    }
+  });
   .on('error', (err) => {
     console.error('FFmpeg Error:', err.message);
     // Explicitly send the error message to the frontend instead of hanging the request
