@@ -136,10 +136,11 @@ async function burnSubtitles(videoPath, srtContent, outPath, reqColor, reqFont, 
   const fontSize = reqFontSize || 22;
   const style = `Fontname=${font},Fontsize=${fontSize},PrimaryColour=${assColor},BackColour=&H80000000,BorderStyle=4,Backing=1,Outline=0,Shadow=0,Alignment=2`;
 
-  // -preset ultrafast is critical so Railway doesn't timeout on large videos
-  const cmd = `ffmpeg -y -i "${videoPath}" -vf "subtitles=${safeSrtPath}:force_style='${style}'" -preset ultrafast -crf 28 -c:a copy "${outPath}"`;
+  // CRITICAL FIX: '-loglevel error' prevents FFmpeg from spamming logs and crashing Node
+  const cmd = `ffmpeg -y -i "${videoPath}" -vf "subtitles=${safeSrtPath}:force_style='${style}'" -preset ultrafast -crf 28 -c:a copy -loglevel error "${outPath}"`;
 
-  await execPromise(cmd);
+  // CRITICAL FIX: Increased Node's buffer limit to 50MB just to be safe
+  await execPromise(cmd, { maxBuffer: 1024 * 1024 * 50 });
   fs.unlinkSync(srtPath);
 }
 
