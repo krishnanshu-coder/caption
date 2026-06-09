@@ -9,16 +9,11 @@ const FormData = require('form-data');
 const rateLimit = require('express-rate-limit');
 const cron = require('node-cron');
 const ffmpeg = require('fluent-ffmpeg');
-if (fs.existsSync('/usr/bin/ffmpeg')) {
-  ffmpeg.setFfmpegPath('/usr/bin/ffmpeg');
-} else if (fs.existsSync('/nix/store')) {
-  // If running inside a custom Nix environment container, auto-discover the path
-  const files = fs.readdirSync('/nix/store');
-  const ffmpegDir = files.find(f => f.includes('-ffmpeg-'));
-  if (ffmpegDir) {
-    ffmpeg.setFfmpegPath(`/nix/store/${ffmpegDir}/bin/ffmpeg`);
-  }
-}
+const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+
+// This automatically handles the path matching behind the scenes
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+console.log("FFmpeg successfully resolved at path:", ffmpegInstaller.path);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
