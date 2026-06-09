@@ -1,226 +1,196 @@
 require('dotenv').config();
-const express = require('express');
-const multer = require('multer');
-const axios = require('axios');
-const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
+const express  = require('express');
+const multer   = require('multer');
+const axios    = require('axios');
+const cors     = require('cors');
+const fs       = require('fs');
+const path     = require('path');
 const rateLimit = require('express-rate-limit');
-const cron = require('node-cron');
+const cron     = require('node-cron');
 
-const app = express();
+const app  = express();
 const PORT = process.env.PORT || 3000;
 
+// ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
 
-// Serve frontend from ../public
+// Serve the HTML/CSS/JS frontend from /public next to /server
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Uploads directory
+// ─── Upload folder ────────────────────────────────────────────────────────────
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-// Multer config — video only, 200MB max, NO ffmpeg needed
+// ─── Multer ───────────────────────────────────────────────────────────────────
 const upload = multer({
   storage: multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadsDir),
-    filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
+    destination: (_req, _file, cb) => cb(null, uploadsDir),
+    filename:    (_req, file,  cb) => cb(null, Date.now() + path.extname(file.originalname))
   }),
-  limits: { fileSize: 200 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowed = ['video/mp4','video/quicktime','video/x-msvideo','video/x-matroska','video/webm','audio/mpeg','audio/wav','audio/mp4'];
-    if (allowed.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only video/audio files are allowed'));
-    }
-  }
+  limits: { fileSize: 200 * 1024 * 1024 }   // 200 MB
 });
 
-const ASSEMBLYAI_KEY = process.env.ASSEMBLYAI_API_KEY;
+// ─── AssemblyAI key ───────────────────────────────────────────────────────────
+const AKEY = process.env.ASSEMBLYAI_API_KEY;
 
-// Validate API key on startup
-if (!ASSEMBLYAI_KEY) {
-  console.error('ERROR: ASSEMBLYAI_API_KEY is not set in environment variables!');
-}
-
-// Rate limiter
-const uploadLimiter = rateLimit({
+// ─── Rate limiter ─────────────────────────────────────────────────────────────
+const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
-  message: { success: false, error: 'Too many requests. Please try again after 15 minutes.' },
-  standardHeaders: true,
-  legacyHeaders: false,
+  message: { success: false, error: 'Too many requests. Please wait 15 minutes.' }
 });
 
-// STEP 1: Upload raw video/audio to AssemblyAI — no ffmpeg needed
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 async function uploadToAssemblyAI(filePath) {
-  const fileStream = fs.createReadStream(filePath);
-  const fileStat = fs.statSync(filePath);
-
-  const response = await axios.post('https://api.assemblyai.com/v2/upload', fileStream, {
+  const stream = fs.createReadStream(filePath);
+  const stat   = fs.statSync(filePath);
+  const res    = await axios.post('https://api.assemblyai.com/v2/upload', stream, {
     headers: {
-      'authorization': ASSEMBLYAI_KEY,
-      'content-type': 'application/octet-stream',
-      'content-length': fileStat.size
+      'authorization':  AKEY,
+      'content-type':   'application/octet-stream',
+      'content-length': stat.size
     },
-    maxContentLength: Infinity,
     maxBodyLength: Infinity,
-    timeout: 120000 // 2 min upload timeout
+    maxContentLength: Infinity,
+    timeout: 180000   // 3-min upload timeout
   });
-  return response.data.upload_url;
+  return res.data.upload_url;
 }
 
-// STEP 2: Start transcription
 async function startTranscription(audioUrl, language) {
-  const langMap = {
-    'hindi': 'hi',
-    'english': 'en',
-    'hinglish': 'hi'
-  };
-
-  const payload = {
-    audio_url: audioUrl,
+  const langMap = { hindi: 'hi', english: 'en', hinglish: 'hi' };
+  const res = await axios.post('https://api.assemblyai.com/v2/transcript', {
+    audio_url:     audioUrl,
     language_code: langMap[language] || 'en',
-    punctuate: true,
-    format_text: true,
-    speaker_labels: false,
-    auto_highlights: false,
-    // word-level timestamps for SRT/VTT generation
-    word_boost: []
-  };
-
-  const response = await axios.post('https://api.assemblyai.com/v2/transcript', payload, {
-    headers: { 'authorization': ASSEMBLYAI_KEY },
-    timeout: 30000
+    punctuate:     true,
+    format_text:   true,
+    speaker_labels: false
+  }, {
+    headers: { 'authorization': AKEY },
+    timeout: 15000
   });
-  return response.data.id;
+  return res.data.id;
 }
 
-// STEP 3: Poll for results (with a max wait of 10 minutes)
-async function getTranscription(transcriptId) {
-  const maxAttempts = 150; // 150 * 2s = 5 minutes max
-  let attempts = 0;
-
-  while (attempts < maxAttempts) {
-    const response = await axios.get(
-      `https://api.assemblyai.com/v2/transcript/${transcriptId}`,
-      { 
-        headers: { 'authorization': ASSEMBLYAI_KEY },
-        timeout: 10000
-      }
+async function pollTranscription(id) {
+  // Poll up to 10 minutes (300 × 2 s)
+  for (let i = 0; i < 300; i++) {
+    const res = await axios.get(
+      `https://api.assemblyai.com/v2/transcript/${id}`,
+      { headers: { 'authorization': AKEY }, timeout: 10000 }
     );
-
-    const { status, text, words, error } = response.data;
-
+    const { status, text, words, error } = res.data;
     if (status === 'completed') return { text, words };
-    if (status === 'error') throw new Error(`AssemblyAI error: ${error}`);
-
-    attempts++;
+    if (status === 'error')     throw new Error('AssemblyAI: ' + error);
     await new Promise(r => setTimeout(r, 2000));
   }
-  throw new Error('Transcription timed out after 5 minutes.');
+  throw new Error('Transcription timed out (>10 min).');
 }
 
-// Words → SRT
-function wordsToSRT(words, style) {
-  if (!words || words.length === 0) return '';
-  let srt = '';
-  let index = 1;
-  const wordsPerCaption = parseInt(style.wordsPerLine) || 6;
-
-  const formatTime = (ms) => {
-    const totalMs = Math.round(ms);
-    const h = Math.floor(totalMs / 3600000);
-    const m = Math.floor((totalMs % 3600000) / 60000);
-    const s = Math.floor((totalMs % 60000) / 1000);
-    const ms2 = totalMs % 1000;
-    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')},${String(ms2).padStart(3,'0')}`;
+function wordsToSRT(words, wpl) {
+  if (!words || !words.length) return '';
+  const n = parseInt(wpl) || 6;
+  const pad = (v, l) => String(v).padStart(l, '0');
+  const ts  = ms => {
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    const s = Math.floor((ms % 60000)  / 1000);
+    const f = ms % 1000;
+    return `${pad(h,2)}:${pad(m,2)}:${pad(s,2)},${pad(f,3)}`;
   };
-
-  for (let i = 0; i < words.length; i += wordsPerCaption) {
-    const chunk = words.slice(i, i + wordsPerCaption);
-    const start = chunk[0].start;
-    const end = chunk[chunk.length - 1].end;
-    const text = chunk.map(w => w.text).join(' ');
-    srt += `${index}\n${formatTime(start)} --> ${formatTime(end)}\n${text}\n\n`;
-    index++;
+  let out = '', idx = 1;
+  for (let i = 0; i < words.length; i += n) {
+    const chunk = words.slice(i, i + n);
+    out += `${idx}\n${ts(chunk[0].start)} --> ${ts(chunk[chunk.length-1].end)}\n${chunk.map(w=>w.text).join(' ')}\n\n`;
+    idx++;
   }
-  return srt;
+  return out;
 }
 
-// Words → VTT
-function wordsToVTT(words, style) {
-  const srt = wordsToSRT(words, style);
-  return 'WEBVTT\n\n' + srt.replace(/,(\d{3})/g, '.$1');
+function wordsToVTT(words, wpl) {
+  return 'WEBVTT\n\n' + wordsToSRT(words, wpl).replace(/,(\d{3})/g, '.$1');
 }
 
-// ── MAIN ENDPOINT ──────────────────────────────────────────
-app.post('/api/generate-captions', uploadLimiter, upload.single('video'), async (req, res) => {
-  const filePath = req.file?.path;
+// ─── HEALTH CHECK (Railway needs this) ───────────────────────────────────────
+app.get('/health', (_req, res) => res.json({ ok: true }));
 
-  try {
-    if (!ASSEMBLYAI_KEY) {
-      return res.status(500).json({ success: false, error: 'Server config error: API key missing.' });
+// ─── JOB STORE (in-memory — for async job pattern) ───────────────────────────
+// WHY: Railway & browsers both timeout long HTTP requests (~60-90 s).
+// A 5-minute transcription WILL get a 502 if we hold the connection open.
+// Fix: POST returns a job_id immediately. Frontend polls GET /api/status/:id.
+const jobs = {};   // { [id]: { status, result, error } }
+
+// STEP 1 – Accept upload, start job, return immediately
+app.post('/api/generate-captions', limiter, upload.single('video'), (req, res) => {
+  if (!AKEY) return res.status(500).json({ success: false, error: 'ASSEMBLYAI_API_KEY not set on server.' });
+  if (!req.file) return res.status(400).json({ success: false, error: 'No video file received.' });
+
+  const jobId    = Date.now().toString(36) + Math.random().toString(36).slice(2);
+  const filePath = req.file.path;
+  const language = req.body.language || 'english';
+  const wpl      = req.body.wordsPerLine || 6;
+
+  // Store pending job
+  jobs[jobId] = { status: 'processing', result: null, error: null };
+
+  // Run async — do NOT await
+  (async () => {
+    try {
+      console.log(`[${jobId}] Uploading ${req.file.originalname}...`);
+      const uploadUrl = await uploadToAssemblyAI(filePath);
+
+      console.log(`[${jobId}] Starting transcription (${language})...`);
+      const transcriptId = await startTranscription(uploadUrl, language);
+
+      console.log(`[${jobId}] Polling...`);
+      const { text, words } = await pollTranscription(transcriptId);
+
+      jobs[jobId] = {
+        status: 'done',
+        result: {
+          text,
+          srt:       wordsToSRT(words, wpl),
+          vtt:       wordsToVTT(words, wpl),
+          wordCount: words ? words.length : 0,
+          language
+        },
+        error: null
+      };
+      console.log(`[${jobId}] Done. ${words ? words.length : 0} words.`);
+    } catch (err) {
+      jobs[jobId] = { status: 'error', result: null, error: err.message };
+      console.error(`[${jobId}] Error:`, err.message);
+    } finally {
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      // Auto-clean job from memory after 30 min
+      setTimeout(() => delete jobs[jobId], 30 * 60 * 1000);
     }
-    if (!filePath) {
-      return res.status(400).json({ success: false, error: 'No video file uploaded.' });
-    }
+  })();
 
-    const { language = 'english', style = '{}' } = req.body;
-    let styleOptions = {};
-    try { styleOptions = JSON.parse(style); } catch(e) { styleOptions = {}; }
-
-    console.log(`[${new Date().toISOString()}] Processing ${req.file.originalname} | lang: ${language}`);
-
-    const uploadUrl = await uploadToAssemblyAI(filePath);
-    console.log('Uploaded to AssemblyAI');
-
-    const transcriptId = await startTranscription(uploadUrl, language);
-    console.log('Transcription started:', transcriptId);
-
-    const { text, words } = await getTranscription(transcriptId);
-    console.log('Transcription complete. Words:', words?.length);
-
-    const srtContent = wordsToSRT(words, styleOptions);
-    const vttContent = wordsToVTT(words, styleOptions);
-
-    // Cleanup uploaded file immediately
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-
-    res.json({
-      success: true,
-      text,
-      srt: srtContent,
-      vtt: vttContent,
-      wordCount: words?.length || 0,
-      language
-    });
-
-  } catch (error) {
-    if (filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    console.error('Error:', error.message);
-    res.status(500).json({ success: false, error: error.message });
-  }
+  // Return job ID immediately — no waiting
+  res.json({ success: true, jobId });
 });
 
-// Health check endpoint — Railway uses this to verify the app is alive
-app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+// STEP 2 – Frontend polls this every 3 s
+app.get('/api/status/:jobId', (req, res) => {
+  const job = jobs[req.params.jobId];
+  if (!job) return res.status(404).json({ success: false, error: 'Job not found.' });
+  res.json({ success: true, ...job });
+});
 
-// Hourly cleanup of any stuck files
+// ─── Hourly cleanup of stuck upload files ─────────────────────────────────────
 cron.schedule('0 * * * *', () => {
   fs.readdir(uploadsDir, (err, files) => {
     if (err) return;
-    files.forEach(file => {
-      const fp = path.join(uploadsDir, file);
-      fs.stat(fp, (err, stats) => {
-        if (!err && Date.now() - stats.mtimeMs > 1800000) {
-          fs.unlink(fp, () => console.log('Cleaned up:', file));
-        }
+    files.forEach(f => {
+      const fp = path.join(uploadsDir, f);
+      fs.stat(fp, (e, s) => {
+        if (!e && Date.now() - s.mtimeMs > 1800000) fs.unlink(fp, () => {});
       });
     });
   });
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// ─── Start ────────────────────────────────────────────────────────────────────
+app.listen(PORT, () => console.log(`CaptionAI server on port ${PORT}`));
