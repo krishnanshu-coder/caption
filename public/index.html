@@ -123,7 +123,6 @@
 <h2 class="sr-only">CaptionAI — Video caption generator for Hindi, English, Hinglish</h2>
 <div class="app">
 
-  <!-- Header -->
   <div class="header">
     <div class="logo">
       <div class="logo-icon"><i class="ti ti-subtitles" style="color:white;font-size:22px"></i></div>
@@ -137,7 +136,6 @@
     </div>
   </div>
 
-  <!-- Upload -->
   <div class="card">
     <p class="section-label">Upload Video</p>
     <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
@@ -151,7 +149,6 @@
     <input type="file" id="fileInput" style="display:none" accept="video/*,audio/*">
   </div>
 
-  <!-- Language -->
   <div class="card">
     <p class="section-label">Language</p>
     <div class="lang-grid">
@@ -167,7 +164,6 @@
     </div>
   </div>
 
-  <!-- Style -->
   <div class="card">
     <p class="section-label">Caption Style</p>
     <div class="style-grid">
@@ -247,7 +243,6 @@
     </div>
   </div>
 
-  <!-- Preview -->
   <div class="card">
     <p class="section-label">Caption Preview</p>
     <div class="preview-box">
@@ -258,7 +253,6 @@
     </div>
   </div>
 
-  <!-- Generate -->
   <div class="card">
     <div class="step-row">
       <div class="sdot done" id="s1">✓</div><span>Upload</span>
@@ -284,6 +278,8 @@
         </div>
         <div class="transcript" id="transcript"></div>
         <div class="dl-row">
+          <button class="dl-btn primary" id="dlMp4Btn" style="background:#e11d48; border-color:#e11d48; display:none;"><i class="ti ti-movie"></i> Download MP4</button>
+          
           <button class="dl-btn primary" onclick="dlFile('srt')"><i class="ti ti-download"></i> Download SRT</button>
           <button class="dl-btn"         onclick="dlFile('vtt')"><i class="ti ti-download"></i> Download VTT</button>
           <button class="dl-btn"         onclick="copyText(this)"><i class="ti ti-copy"></i> Copy text</button>
@@ -381,102 +377,12 @@ async function startJob() {
   fd.append('video', file);
   fd.append('language', lang);
   fd.append('wordsPerLine', $('wplSlider').value);
+  
+  // NEW: Append styling data so FFmpeg knows how to draw the captions
+  fd.append('color', color);
+  fd.append('font', font);
+  const fsInput = document.querySelector('input[type=range]');
+  fd.append('fontSize', fsInput ? fsInput.value : 22);
 
   try {
-    const res  = await fetch('/api/generate-captions', { method: 'POST', body: fd });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error || 'Upload failed');
-
-    // Start polling
-    $('pfill').style.width = '20%';
-    $('statusMsg').textContent = 'Transcribing... (this takes 30–120 seconds)';
-    $('genBtn').innerHTML = '<i class="ti ti-loader-2"></i> Processing...';
-    pollJob(data.jobId);
-
-  } catch (err) {
-    resetBtn();
-    showError(err.message);
-  }
-}
-
-// ── Poll until done ────────────────────────────────────────────────────────────
-let pollCount = 0;
-const progressSteps = [20,30,40,50,60,70,80,88,93,96];
-
-function pollJob(jobId) {
-  pollCount = 0;
-  if (pollTimer) clearInterval(pollTimer);
-
-  pollTimer = setInterval(async () => {
-    try {
-      const res  = await fetch('/api/status/' + jobId);
-      const data = await res.json();
-
-      // Animate progress bar
-      const pct = progressSteps[Math.min(pollCount, progressSteps.length - 1)];
-      $('pfill').style.width = pct + '%';
-      pollCount++;
-
-      if (data.status === 'done') {
-        clearInterval(pollTimer);
-        onSuccess(data.result);
-      } else if (data.status === 'error') {
-        clearInterval(pollTimer);
-        resetBtn();
-        showError(data.error || 'Transcription failed.');
-      }
-      // else still 'processing' → keep polling
-    } catch (err) {
-      // network hiccup — keep trying
-      console.warn('Poll error:', err.message);
-    }
-  }, 3000);   // poll every 3 seconds
-}
-
-// ── Success ────────────────────────────────────────────────────────────────────
-function onSuccess(result) {
-  resultData = result;
-  $('pfill').style.width = '100%';
-  $('statusMsg').textContent = '';
-  $('wCount').textContent = result.wordCount + ' words';
-  $('transcript').textContent = result.text || '(no text detected)';
-  $('outSection').style.display = 'block';
-  $('s2').className = 'sdot done'; $('s2').textContent = '✓';
-  $('s3').className = 'sdot done'; $('s3').textContent = '✓';
-  $('genBtn').disabled = false;
-  $('genBtn').innerHTML = '<i class="ti ti-refresh"></i> Re-generate';
-}
-
-function resetBtn() {
-  $('genBtn').disabled = false;
-  $('genBtn').innerHTML = '<i class="ti ti-sparkles"></i> Generate Captions';
-  $('pfill').style.width = '0%';
-  $('statusMsg').textContent = '';
-  $('s2').className = 'sdot'; $('s2').textContent = '2';
-}
-
-// ── Downloads ──────────────────────────────────────────────────────────────────
-function dlFile(type) {
-  if (!resultData) return;
-  const content = type === 'srt' ? resultData.srt : resultData.vtt;
-  const blob = new Blob([content], { type: 'text/plain' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'captions.' + type;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-function copyText(btn) {
-  if (!resultData) return;
-  navigator.clipboard.writeText(resultData.text).then(() => {
-    const orig = btn.innerHTML;
-    btn.innerHTML = '<i class="ti ti-check"></i> Copied!';
-    setTimeout(() => btn.innerHTML = orig, 2000);
-  });
-}
-
-updatePreview();
-</script>
-</body>
-</html>
+    const res  = await fetch('/api/generate-captions', { method:
