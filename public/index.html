@@ -360,8 +360,9 @@ function showError(msg) {
 function clearError() { $('errBox').style.display = 'none'; }
 
 // ── MAIN: start job ────────────────────────────────────────────────────────────
+// ── MAIN: start job ────────────────────────────────────────────────────────────
 async function startJob() {
-  const file = $('fileInput').files[0];
+  const file = $('fileInput') ? $('fileInput').files[0] : null;
   if (!file) { showError('Please select a video file first.'); return; }
 
   clearError();
@@ -376,16 +377,20 @@ async function startJob() {
   const fd = new FormData();
   fd.append('video', file);
   fd.append('language', lang);
-  fd.append('wordsPerLine', $('wplSlider').value);
-  
-  // NEW: Append styling data so FFmpeg knows how to draw the captions
+  fd.append('wordsPerLine', $('wplSlider') ? $('wplSlider').value : 6);
   fd.append('color', color);
   fd.append('font', font);
-  const fsInput = document.querySelector('input[type=range]');
-  fd.append('fontSize', fsInput ? fsInput.value : 22);
+  fd.append('fontSize', $('fsSlider') ? $('fsSlider').value : 22);
 
   try {
     const res  = await fetch('/api/generate-captions', { method: 'POST', body: fd });
+    
+    // CRITICAL FIX: Check if Railway dropped the connection before parsing JSON
+    const contentType = res.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      throw new Error('Connection timed out. The video might be too large for your current upload speed.');
+    }
+
     const data = await res.json();
     if (!data.success) throw new Error(data.error || 'Upload failed');
 
@@ -412,9 +417,13 @@ function pollJob(jobId) {
   pollTimer = setInterval(async () => {
     try {
       const res  = await fetch('/api/status/' + jobId);
+      
+      // CRITICAL FIX: If Railway returns a 502 "upstream error" text, ignore it and try again next tick
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) return;
+
       const data = await res.json();
 
-      // Animate progress bar for transcription
       if(data.status !== 'rendering') {
         const pct = progressSteps[Math.min(pollCount, progressSteps.length - 1)];
         $('pfill').style.width = pct + '%';
@@ -425,7 +434,6 @@ function pollJob(jobId) {
         clearInterval(pollTimer);
         onSuccess(data.result);
       } else if (data.status === 'rendering') {
-        // NEW: Update UI specifically for the FFmpeg rendering phase
         $('statusMsg').textContent = 'Burning captions into MP4... (This can take 30-60s for long videos)';
         $('pfill').style.width = '85%';
       } else if (data.status === 'error') {
@@ -433,12 +441,10 @@ function pollJob(jobId) {
         resetBtn();
         showError(data.error || 'Transcription failed.');
       }
-      // else still 'processing' → keep polling
     } catch (err) {
-      // network hiccup — keep trying
       console.warn('Poll error:', err.message);
     }
-  }, 3000);   // poll every 3 seconds
+  }, 3000);
 }
 
 // ── Success ────────────────────────────────────────────────────────────────────
