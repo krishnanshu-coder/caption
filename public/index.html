@@ -303,10 +303,13 @@ function setColor(el, v) { qs('.swatch', el);    color = v; updatePreview(); }
 function setFont(el, v)  { qs('.fpill', el);     font  = v; updatePreview(); }
 function setAnim(el, v)  { qs('.achip', el);     anim  = v; }
 
+// FIXED: Bulletproof selector scoped to the parent to prevent multiple selections
 function qs(sel, el) {
-  el.closest('.' + sel.slice(1).split(' ')[0])
-    ?.querySelectorAll(sel)
-    .forEach(b => b.classList.remove('active'));
+  // Find the exact grid container this button lives in
+  const parentGrid = el.parentElement;
+  // Remove the active class ONLY from sibling buttons in this specific grid
+  parentGrid.querySelectorAll(sel).forEach(b => b.classList.remove('active'));
+  // Add active to the clicked button
   el.classList.add('active');
 }
 
