@@ -12,6 +12,9 @@ const { exec }  = require('child_process');
 const util      = require('util');
 const execPromise = util.promisify(exec);
 
+// NEW: Transliteration engine to convert Hindi script to English alphabet
+const { transliterate } = require('transliteration');
+
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
@@ -106,7 +109,6 @@ function wordsToVTT(words, wpl) {
   return 'WEBVTT\n\n' + wordsToSRT(words, wpl).replace(/,(\d{3})/g, '.$1');
 }
 
-// NEW: Updated to handle Hindi fonts
 async function burnSubtitles(videoPath, srtContent, outPath, reqColor, reqFont, reqFontSize, lang) {
   const srtPath = videoPath + '.srt';
   fs.writeFileSync(srtPath, srtContent);
@@ -118,8 +120,8 @@ async function burnSubtitles(videoPath, srtContent, outPath, reqColor, reqFont, 
   const safeSrtPath = path.resolve(srtPath).replace(/\\/g, '/').replace(/:/g, '\\:');
 
   let font = reqFont || 'Arial';
-  // If the language requires Hindi characters, force the Noto font we installed in Docker
-  if (lang === 'hindi' || lang === 'hinglish') {
+  // If native Hindi is selected, use Devanagari. (Hinglish uses standard Latin fonts)
+  if (lang === 'hindi') {
     font = 'Noto Sans Devanagari'; 
   }
 
@@ -152,6 +154,13 @@ app.post('/api/generate-captions', limiter, upload.single('video'), (req, res) =
       const transcriptId = await startTranscription(uploadUrl, language);
       const { text, words } = await pollTranscription(transcriptId);
 
+      // NEW: Convert Hindi script to Roman alphabet for Hinglish selection
+      if (language === 'hinglish' && words) {
+        words.forEach(w => {
+          w.text = transliterate(w.text);
+        });
+      }
+
       const srtText = wordsToSRT(words, wpl);
       const outPath = filePath + '_captioned.mp4';
 
@@ -164,14 +173,14 @@ app.post('/api/generate-captions', limiter, upload.single('video'), (req, res) =
         req.body.color, 
         req.body.font, 
         req.body.fontSize,
-        language // Pass language to the burner function
+        language 
       );
 
       jobs[jobId] = {
         status: 'done',
         outPath: outPath,
         result: {
-          text,
+          text:      language === 'hinglish' ? transliterate(text) : text,
           srt:       srtText,
           vtt:       wordsToVTT(words, wpl),
           wordCount: words ? words.length : 0,
