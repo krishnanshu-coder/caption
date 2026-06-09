@@ -1,7 +1,6 @@
 [build]
-builder = "NIXPACKS"
-buildCommand = "cd server && npm install"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "cd server && node index.js"
 restartPolicyType = "on_failure"
