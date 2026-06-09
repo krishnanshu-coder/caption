@@ -1,12 +1,17 @@
 require('dotenv').config();
-const express  = require('express');
-const multer   = require('multer');
-const axios    = require('axios');
-const cors     = require('cors');
-const fs       = require('fs');
-const path     = require('path');
+const express   = require('express');
+const multer    = require('multer');
+const axios     = require('axios');
+const cors      = require('cors');
+const fs        = require('fs');
+const path      = require('path');
 const rateLimit = require('express-rate-limit');
-const cron     = require('node-cron');
+const cron      = require('node-cron');
+
+// NEW: Required for FFmpeg
+const { exec }  = require('child_process');
+const util      = require('util');
+const execPromise = util.promisify(exec);
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -114,14 +119,35 @@ function wordsToVTT(words, wpl) {
   return 'WEBVTT\n\n' + wordsToSRT(words, wpl).replace(/,(\d{3})/g, '.$1');
 }
 
+// NEW: Function to burn subtitles using FFmpeg
+async function burnSubtitles(videoPath, srtContent, outPath, reqColor, reqFont, reqFontSize) {
+  const srtPath = videoPath + '.srt';
+  fs.writeFileSync(srtPath, srtContent);
+
+  // Convert HTML Hex Color (#FFFFFF) to FFmpeg ASS format (&H00FFFFFF)
+  const hex = (reqColor || '#FFFFFF').replace('#', '');
+  const r = hex.substring(0, 2), g = hex.substring(2, 4), b = hex.substring(4, 6);
+  const assColor = `&H00${b}${g}${r}`;
+
+  // FFmpeg requires exact absolute paths for subtitle filters
+  const safeSrtPath = path.resolve(srtPath).replace(/\\/g, '/').replace(/:/g, '\\:');
+
+  const font = reqFont || 'Arial';
+  const fontSize = reqFontSize || 22;
+  const style = `Fontname=${font},Fontsize=${fontSize},PrimaryColour=${assColor},BackColour=&H80000000,BorderStyle=4,Backing=1,Outline=0,Shadow=0,Alignment=2`;
+
+  // -preset ultrafast is critical so Railway doesn't timeout on large videos
+  const cmd = `ffmpeg -y -i "${videoPath}" -vf "subtitles=${safeSrtPath}:force_style='${style}'" -preset ultrafast -crf 28 -c:a copy "${outPath}"`;
+
+  await execPromise(cmd);
+  fs.unlinkSync(srtPath);
+}
+
 // ─── HEALTH CHECK (Railway needs this) ───────────────────────────────────────
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
 // ─── JOB STORE (in-memory — for async job pattern) ───────────────────────────
-// WHY: Railway & browsers both timeout long HTTP requests (~60-90 s).
-// A 5-minute transcription WILL get a 502 if we hold the connection open.
-// Fix: POST returns a job_id immediately. Frontend polls GET /api/status/:id.
-const jobs = {};   // { [id]: { status, result, error } }
+const jobs = {};   // { [id]: { status, result, error, outPath } }
 
 // STEP 1 – Accept upload, start job, return immediately
 app.post('/api/generate-captions', limiter, upload.single('video'), (req, res) => {
@@ -133,8 +159,8 @@ app.post('/api/generate-captions', limiter, upload.single('video'), (req, res) =
   const language = req.body.language || 'english';
   const wpl      = req.body.wordsPerLine || 6;
 
-  // Store pending job
-  jobs[jobId] = { status: 'processing', result: null, error: null };
+  // Store pending job tracking new outPath variable
+  jobs[jobId] = { status: 'processing', result: null, error: null, outPath: null };
 
   // Run async — do NOT await
   (async () => {
@@ -148,25 +174,50 @@ app.post('/api/generate-captions', limiter, upload.single('video'), (req, res) =
       console.log(`[${jobId}] Polling...`);
       const { text, words } = await pollTranscription(transcriptId);
 
+      const srtText = wordsToSRT(words, wpl);
+      const outPath = filePath + '_captioned.mp4';
+
+      // NEW PHASE: Burning the subtitles into the MP4
+      jobs[jobId].status = 'rendering';
+      console.log(`[${jobId}] Rendering MP4 with FFmpeg...`);
+      
+      await burnSubtitles(
+        filePath, 
+        srtText, 
+        outPath, 
+        req.body.color, 
+        req.body.font, 
+        req.body.fontSize
+      );
+
       jobs[jobId] = {
         status: 'done',
+        outPath: outPath,
         result: {
           text,
-          srt:       wordsToSRT(words, wpl),
+          srt:       srtText,
           vtt:       wordsToVTT(words, wpl),
           wordCount: words ? words.length : 0,
-          language
+          language,
+          videoUrl:  `/api/download-video/${jobId}` // Gives frontend a download link
         },
         error: null
       };
-      console.log(`[${jobId}] Done. ${words ? words.length : 0} words.`);
+      console.log(`[${jobId}] Done!`);
     } catch (err) {
       jobs[jobId] = { status: 'error', result: null, error: err.message };
       console.error(`[${jobId}] Error:`, err.message);
     } finally {
+      // Delete the original uploaded file
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      // Auto-clean job from memory after 30 min
-      setTimeout(() => delete jobs[jobId], 30 * 60 * 1000);
+      
+      // Auto-clean job from memory AND delete the rendered MP4 after 30 min
+      setTimeout(() => {
+        if (jobs[jobId] && jobs[jobId].outPath && fs.existsSync(jobs[jobId].outPath)) {
+          fs.unlinkSync(jobs[jobId].outPath);
+        }
+        delete jobs[jobId];
+      }, 30 * 60 * 1000);
     }
   })();
 
@@ -179,6 +230,15 @@ app.get('/api/status/:jobId', (req, res) => {
   const job = jobs[req.params.jobId];
   if (!job) return res.status(404).json({ success: false, error: 'Job not found.' });
   res.json({ success: true, ...job });
+});
+
+// NEW: Endpoint to download the final MP4
+app.get('/api/download-video/:jobId', (req, res) => {
+  const job = jobs[req.params.jobId];
+  if (!job || !job.outPath || !fs.existsSync(job.outPath)) {
+    return res.status(404).send('Video not found or expired.');
+  }
+  res.download(job.outPath, 'CaptionAI_Export.mp4');
 });
 
 // ─── Hourly cleanup of stuck upload files ─────────────────────────────────────
@@ -194,5 +254,11 @@ cron.schedule('0 * * * *', () => {
   });
 });
 
+// ─── SPA Fallback (Prevents 404 errors on the website) ────────────────────────
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
 // ─── Start ────────────────────────────────────────────────────────────────────
-app.listen(PORT, () => console.log(`CaptionAI server on port ${PORT}`));
+// CRITICAL FIX: You MUST include '0.0.0.0' for Railway Docker deployments
+app.listen(PORT, '0.0.0.0', () => console.log(`CaptionAI server on port ${PORT}`));
